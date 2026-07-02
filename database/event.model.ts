@@ -28,13 +28,19 @@ function slugify(value: string): string {
 }
 
 function normalizeDate(value: string): string {
-  const parsedDate = new Date(value);
+  const parsedDate = new Date(value + 'T00:00:00Z');
 
   if (Number.isNaN(parsedDate.getTime())) {
     throw new Error('Event date must be a valid date');
   }
 
-  return parsedDate.toISOString().slice(0, 10);
+  // Verify the parsed date matches the input to catch invalid calendar dates (e.g., 2024-02-30)
+  const isoString = parsedDate.toISOString().slice(0, 10);
+  if (isoString !== value) {
+    throw new Error('Event date must be a valid calendar date');
+  }
+
+  return isoString;
 }
 
 function normalizeTime(value: string): string {
@@ -49,7 +55,20 @@ function normalizeTime(value: string): string {
   const minutes = Number(match[2] ?? '0');
   const meridiem = match[3]?.toUpperCase();
 
-  if (hours > 24 || minutes > 59) {
+  // Validate hour and minute ranges
+  if (meridiem) {
+    // 12-hour format: hours must be 1-12
+    if (hours < 1 || hours > 12) {
+      throw new Error('Event time is invalid');
+    }
+  } else {
+    // 24-hour format: hours must be 0-23
+    if (hours > 23) {
+      throw new Error('Event time is invalid');
+    }
+  }
+
+  if (minutes > 59) {
     throw new Error('Event time is invalid');
   }
 

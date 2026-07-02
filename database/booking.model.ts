@@ -1,4 +1,4 @@
-import { Schema, model, type CallbackWithoutResultAndOptionalError, type Document, type Model, Types } from 'mongoose';
+import { Schema, model, type Document, type Model, type Types } from 'mongoose';
 import { Event } from './event.model';
 
 export interface IBooking extends Document {
@@ -17,14 +17,12 @@ const bookingSchema = new Schema<IBooking>(
 );
 
 // Validate that the referenced event exists before the booking is saved.
-bookingSchema.pre('save', async function (this: IBooking & Document, next: CallbackWithoutResultAndOptionalError) {
+bookingSchema.pre('save', async function (this: IBooking & Document) {
   const event = await Event.findById(this.eventId);
 
   if (!event) {
-    return next(new Error('Referenced event does not exist'));
+    throw new Error('Referenced event does not exist');
   }
-
-  next();
 });
 
 export const Booking: Model<IBooking> = model<IBooking>('Booking', bookingSchema);

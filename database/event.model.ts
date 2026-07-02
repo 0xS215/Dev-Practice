@@ -1,4 +1,4 @@
-import { Schema, model, type CallbackWithoutResultAndOptionalError, type Document, type Model, type Types } from 'mongoose';
+import { Schema, model, type Document, type Model } from 'mongoose';
 
 export interface IEvent extends Document {
   title: string;
@@ -85,11 +85,11 @@ const eventSchema = new Schema<IEvent>(
 );
 
 // Generate a URL-friendly slug from the title and only refresh it when the title changes.
-eventSchema.pre('save', function (this: IEvent & Document, next: CallbackWithoutResultAndOptionalError) {
+eventSchema.pre('save', async function (this: IEvent & Document) {
   const title = this.title?.trim();
 
   if (!title) {
-    return next(new Error('Event title is required'));
+    throw new Error('Event title is required');
   }
 
   this.title = title;
@@ -104,22 +104,20 @@ eventSchema.pre('save', function (this: IEvent & Document, next: CallbackWithout
     const value = this[field];
 
     if (typeof value === 'string' && value.trim().length === 0) {
-      return next(new Error(`${String(field)} cannot be empty`));
+      throw new Error(`${String(field)} cannot be empty`);
     }
   }
 
   if (!Array.isArray(this.agenda) || this.agenda.length === 0) {
-    return next(new Error('Agenda must include at least one item'));
+    throw new Error('Agenda must include at least one item');
   }
 
   if (!Array.isArray(this.tags) || this.tags.length === 0) {
-    return next(new Error('Tags must include at least one item'));
+    throw new Error('Tags must include at least one item');
   }
 
   this.date = normalizeDate(this.date);
   this.time = normalizeTime(this.time);
-
-  next();
 });
 
 export const Event: Model<IEvent> = model<IEvent>('Event', eventSchema);
